@@ -15,14 +15,12 @@ public class Glove {
         public void onLetterDraw(int index, char[] str) {
         }
 
-        ;
-
         public void onButtonPressed(int time) {
         }
 
-        ;
+        public void onLetterReceived(char c){
 
-        public abstract void onLetterReceived(char c);
+        }
     }
 
     private static int[] map = {9, 12, 7, 4, 1, 10, 13, 8, 5, 2, 11, 14, 15, 6, 3, -9, -12, -7, -4, -1, -11, -14, -16, -15, -6, -3};
@@ -81,9 +79,9 @@ public class Glove {
     public void connect(Context appContext) {
         device.addListener(new Device.DeviceListener() {
             @Override
-            public void onConnection() {
+            public void onDeviceFound() {
                 //TODO set debug mode 2
-                device.send("[!SET_DEBUG_MODE][2]");
+                device.send("[!SET_DEBUG_MODE][2][!SET_THRESHOLD][6]");
             }
 
             @Override

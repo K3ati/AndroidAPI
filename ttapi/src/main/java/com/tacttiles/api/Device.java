@@ -65,7 +65,10 @@ public class Device {
         public void onGestureReceived(String type, String args) {
         }
 
-        public void onConnection() {
+        public void onDeviceFound() {
+        }
+
+        public void onDeviceLost() {
         }
     }
 
@@ -76,7 +79,7 @@ public class Device {
     private List<DeviceListener> deviceListeners;
 
     public Device() {
-        serviceConnection = new RuntimeConnection(){
+        serviceConnection = new RuntimeConnection() {
             @Override
             public void onServiceConnected() {
                 serviceConnection.requestFocus(Device.this);
@@ -85,7 +88,7 @@ public class Device {
         deviceListeners = new ArrayList<>();
     }
 
-    public RuntimeConnection getServiceConnection(){
+    public RuntimeConnection getServiceConnection() {
         return serviceConnection;
     }
 
@@ -186,10 +189,18 @@ public class Device {
         }
     }
 
-    public void onConnection() {
+    public void onDeviceFound() {
         for (DeviceListener deviceListener : deviceListeners) {
             if (deviceListener.isEnabled()) {
-                deviceListener.onConnection();
+                deviceListener.onDeviceFound();
+            }
+        }
+    }
+
+    public void onDeviceLost() {
+        for (DeviceListener deviceListener : deviceListeners) {
+            if (deviceListener.isEnabled()) {
+                deviceListener.onDeviceLost();
             }
         }
     }
@@ -202,7 +213,7 @@ public class Device {
         send("[!GET_VCC]");
     }
 
-    public void vibrateDevice(byte times, int durationMS) {
+    public void vibrateDevice(int times, int durationMS) {
         send("[!BLINK][0][" + times + "][2|" + durationMS + "]");
     }
 

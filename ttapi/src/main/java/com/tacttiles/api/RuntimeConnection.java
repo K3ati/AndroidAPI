@@ -14,9 +14,6 @@ import android.os.Parcel;
 import android.os.RemoteException;
 import android.os.ResultReceiver;
 import android.os.Vibrator;
-import android.widget.Toast;
-
-import java.util.UUID;
 
 /**
  * Created by andy on 17/04/17.
@@ -45,7 +42,7 @@ public class RuntimeConnection {
 
     public static void sendAnonymousIPCMessage (Context appContext, int type, Bundle data) {
         Intent i = new Intent();
-        //i.setPackage("com.tacttiles.runtime");
+        i.setPackage("com.tacttiles.runtime");
         i.setAction("com.tacttiles.runtime.RuntimeService");
         i.putExtra("type", type);
         i.putExtras(data);
@@ -70,7 +67,10 @@ public class RuntimeConnection {
                 device.onMessage(data.getString("msg"));
                 break;
             case RC_CMD.DEVICE_CONNECTED:
-                device.onConnection();
+                device.onDeviceFound();
+                break;
+            case RC_CMD.DEVICE_LOST:
+                device.onDeviceLost();
                 break;
         }
     }
