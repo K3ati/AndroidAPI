@@ -25,8 +25,8 @@ public class Glove {
 
     private static int[] map = {9, 12, 7, 4, 1, 10, 13, 8, 5, 2, 11, 14, 15, 6, 3, -9, -12, -7, -4, -1, -11, -14, -16, -15, -6, -3};
     private static char spaceChar = 'w';
-    private static int delayL = 300;
-    private static int delayW = 300;
+    private static int delayL = 255;
+    private static int delayW = 255;
     private static int singleH = 150;
     private static int doubleH = 150;
     private static int doubleL = 100;
@@ -162,7 +162,7 @@ public class Glove {
      */
     protected String buildLetterGestureMessage(char letter) {
         if (letter == ' ') {
-            return "[!PLAY][%len][1,0," + delayL + "]";
+            return "[!PLAY][%len][1,0," + delayL + ",7]";
         } else {
             if (letter >= 97 && letter <= 122) {
                 int tile = map[(int) letter - 97];
