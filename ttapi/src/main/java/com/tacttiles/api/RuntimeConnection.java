@@ -15,11 +15,14 @@ import android.os.ResultReceiver;
 import android.os.Vibrator;
 
 /**
- * Created by andy on 17/04/17.
+ * A RuntimeConnection represents a inter-process communication (IPC) connection with the Tact-Tiles Runtime Service app.
  */
 
 public class RuntimeConnection {
 
+    /**
+     * Defines the compatible commands of the Tact-Tiles Runtime Service app.
+     */
     public static class RS_CMD {
         public static final int SEND = 0;
         public static final int CONNECT_BT = 1;
@@ -27,8 +30,13 @@ public class RuntimeConnection {
         public static final int REGISTER = 3;
         public static final int UNREGISTER = 4;
 
-    };
+    }
 
+    ;
+
+    /**
+     * Defines the compatible commands of the Tact-Tiles API {@link RuntimeConnection} clients.
+     */
     public static class RC_CMD {
         public static final int RECEIVED = 0;
         public static final int FOCUS_LOST = 1;
@@ -38,7 +46,15 @@ public class RuntimeConnection {
 
     }
 
-    public static void sendAnonymousIPCMessage (Context appContext, final int type, final Bundle data, final Handler handler) {
+    /**
+     * Sends a request to the runtime service without the need to setup a new {@link RuntimeConnection}.
+     *
+     * @param appContext The current context of this application.
+     * @param type       Type of the request, defined by {@link RS_CMD}.
+     * @param data       Bundle with the command arguments.
+     * @param handler    The handler for the response message, if any.
+     */
+    public static void sendAnonymousIPCMessage(Context appContext, final int type, final Bundle data, final Handler handler) {
         Intent i = new Intent();
         i.setPackage("com.tacttiles.runtime");
         i.setAction("com.tacttiles.runtime.RuntimeService");
@@ -50,7 +66,6 @@ public class RuntimeConnection {
 
             @Override
             public void onServiceConnected(ComponentName name, IBinder service) {
-                // We are conntected to the service
                 Messenger messenger = new Messenger(service);
 
                 try {
@@ -71,7 +86,10 @@ public class RuntimeConnection {
     private Messenger mThis;
     private Device device;
 
-    public RuntimeConnection(){
+    /**
+     * Default constructor.
+     */
+    public RuntimeConnection() {
         mThis = new Messenger(new Handler() {
             @Override
             public void handleMessage(Message msg) {
@@ -80,16 +98,27 @@ public class RuntimeConnection {
         });
     }
 
-    public void vibratePhone(long[] pattern, int repeat) {
-        if (appContext == null){
+    /**
+     * Vibrates the phone.
+     *
+     * @param pattern Pattern as defined by alternating off-on values in milliseconds.
+     */
+    public void vibratePhone(long[] pattern) {
+        if (appContext == null) {
             throw new RuntimeException("RuntimeConnection not conected");
         }
         Vibrator v = (Vibrator) appContext.getSystemService(Context.VIBRATOR_SERVICE);
-        v.vibrate(pattern, repeat);
+        v.vibrate(pattern, -1);
     }
 
-    protected void onIPCMessage (int type, Bundle data) {
-        switch (type){
+    /**
+     * Called when this client receives a response from the service runtime.
+     *
+     * @param type Type of the request, defined by {@link RC_CMD}.
+     * @param data Bundle with the command arguments.
+     */
+    protected void onIPCMessage(int type, Bundle data) {
+        switch (type) {
             case RC_CMD.RECEIVED:
                 device.onMessage(data.getString("msg"));
                 break;
@@ -102,7 +131,13 @@ public class RuntimeConnection {
         }
     }
 
-    protected void sendIPCMessage(int type, Bundle data){
+    /**
+     * Sends a request to the runtime service.
+     *
+     * @param type Type of the request, defined by {@link RS_CMD}.
+     * @param data Bundle with the command arguments.
+     */
+    protected void sendIPCMessage(int type, Bundle data) {
         Message msg = Message.obtain(null, type);
         msg.replyTo = mThis;
         if (data != null) {
@@ -115,14 +150,26 @@ public class RuntimeConnection {
         }
     }
 
-    public void sendBTMessage(byte [] msg){
+    /**
+     * Sends a request to send a bluetooth message to the device.
+     *
+     * @param msg The message to be sent.
+     */
+    public void sendBTMessage(byte[] msg) {
         Bundle bundle = new Bundle();
         bundle.putByteArray("msg", msg);
         sendIPCMessage(RS_CMD.SEND, bundle);
     }
 
-    boolean connect(Context context){
-        this.appContext = context;
+    /**
+     * Connects this adapter to the Tact-Tiles runtime service,
+     * which handles the bluetooth communication and device access, starting it if necessary.
+     *
+     * @param appContext The current context of this application.
+     * @return
+     */
+    public boolean connect(Context appContext) {
+        this.appContext = appContext;
         Intent i = new Intent();
         i.setPackage("com.tacttiles.runtime");
         i.setAction("com.tacttiles.runtime.RuntimeService");
@@ -133,6 +180,7 @@ public class RuntimeConnection {
             @Override
             public void onServiceDisconnected(ComponentName name) {
                 mThis = null;
+                RuntimeConnection.this.onServiceDisconnected();
             }
 
             @Override
@@ -155,22 +203,41 @@ public class RuntimeConnection {
         }, Context.BIND_AUTO_CREATE);
     }
 
-    public void disconnect(){
+    /**
+     * Properly unregister this client. This method should be called before destroying the connected client activity.
+     */
+    public void disconnect() {
         sendIPCMessage(RS_CMD.UNREGISTER, null);
     }
 
-    public void requestFocus(Device device){
+    /**
+     * Request that all bluetooth messages received from a Tact-Tiles device to be redirected to this adapter.
+     *
+     * @param device The device to be registered.
+     */
+    public void requestFocus(Device device) {
         this.device = device;
         sendIPCMessage(RS_CMD.REQUEST_FOCUS, null); //TODO use device id
     }
 
-    public void requestBTDiscovery(){
+    /**
+     * Request a rescan of the available devices.
+     */
+    public void requestBTDiscovery() {
         sendIPCMessage(RS_CMD.CONNECT_BT, null);
     }
 
-    public void onServiceConnected(){
+    /**
+     * Called when this adapter successfully connects to the service.
+     */
+    protected void onServiceConnected() {
 
     }
 
+    /**
+     * Called when this adapter is disconnected from the service.
+     */
+    protected void onServiceDisconnected() {
 
+    }
 }

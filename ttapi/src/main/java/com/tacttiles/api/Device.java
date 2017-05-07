@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Created by andy on 17/04/17.
+ * A Device is a hardware abstraction that handles the low level communication protocol used in devices compatibles with the Tact-Tiles platform.
  */
 
 public class Device {
@@ -41,33 +41,74 @@ public class Device {
     public static final String D_START_DRAW = "ST";
     public static final String D_STATE_ADDRESS = "SA";
 
-
+    /**
+     * A device listener receives notifications of new data available in the {@link Device} object. Notifications indicate system status and user interaction related events.
+     */
     public abstract static class DeviceListener {
         private boolean enabled = true;
 
+        /**
+         * Returns if this listener is enabled.
+         *
+         * @return True if this listener is enabled.
+         */
         public boolean isEnabled() {
             return enabled;
         }
 
+        /**
+         * Enables or disables this listener.
+         *
+         * @param enabled If true this listener is enabled.
+         */
         public void setEnabled(boolean enabled) {
             this.enabled = enabled;
         }
 
+        /**
+         * Called when the device receive messages that fall under the {@link #M_SYSTEM} category.
+         *
+         * @param type Type of the message.
+         * @param args Message arguments.
+         */
         public void onSystemMessage(String type, String args) {
         }
 
+        /**
+         * Called when the device receive messages that fall under the {@link #M_ERROR} category.
+         *
+         * @param msg The error message.
+         */
         public void onErrorMessage(String msg) {
         }
 
+        /**
+         * Called when the device receive messages that fall under the {@link #M_DEBUG} category.
+         *
+         * @param type Type of the message.
+         * @param args Message arguments.
+         */
         public void onDebugMessage(String type, String args) {
         }
 
+        /**
+         * Called when the device receive messages that fall under the {@link #M_GESTURE} category.
+         *
+         * @param type Type of the message.
+         * @param args Message arguments.
+         */
         public void onGestureReceived(String type, String args) {
         }
 
+        /**
+         * Called when the bluetooth device is connected.
+         */
         public void onDeviceFound() {
         }
 
+        /**
+         * Called if the bluetooth device connection is lost or when the device is not connected.
+         */
         public void onDeviceLost() {
         }
     }
@@ -78,6 +119,9 @@ public class Device {
     private RuntimeConnection serviceConnection;
     private List<DeviceListener> deviceListeners;
 
+    /**
+     *
+     */
     public Device() {
         serviceConnection = new RuntimeConnection() {
             @Override
@@ -88,23 +132,49 @@ public class Device {
         deviceListeners = new ArrayList<>();
     }
 
+    /**
+     * Returns the service connection of this device.
+     *
+     * @return The service connection of this device.
+     */
     public RuntimeConnection getServiceConnection() {
         return serviceConnection;
     }
 
+    /**
+     * Adds a listener to the current set of event listeners of this adapter. Events can be system status or user interaction related events.
+     *
+     * @param deviceListener The listener to be added to the current set of listeners on this adapter.
+     */
     public void addListener(DeviceListener deviceListener) {
         deviceListeners.add(deviceListener);
     }
 
+    /**
+     * Removes a listener from the set listening to this adapter.
+     *
+     * @param deviceListener The listener to be removed to the current set of listeners on this adapter.
+     */
     public void removeListener(DeviceListener deviceListener) {
         deviceListeners.remove(deviceListener);
     }
 
+    /**
+     * Connects this adapter to the Tact-Tiles runtime service,
+     * which handles the bluetooth communication and device access.
+     *
+     * @param appContext The current context of this application.
+     */
     public void connect(Context appContext) {
         serviceConnection.connect(appContext);
     }
 
-    public void onMessage(String msg) {
+    /**
+     * Called when a bluetooth message is received by the runtime service and this device is properly connected.
+     *
+     * @param msg Message contents.
+     */
+    protected void onMessage(String msg) {
         String type = "" + msg.charAt(2) + msg.charAt(3);
         String contents = msg.substring(4);
         switch (msg.charAt(0)) {
@@ -189,7 +259,10 @@ public class Device {
         }
     }
 
-    public void onDeviceFound() {
+    /**
+     * Called when the bluetooth device is connected.
+     */
+    protected void onDeviceFound() {
         for (DeviceListener deviceListener : deviceListeners) {
             if (deviceListener.isEnabled()) {
                 deviceListener.onDeviceFound();
@@ -197,7 +270,10 @@ public class Device {
         }
     }
 
-    public void onDeviceLost() {
+    /**
+     * Called when the bluetooth device connection is lost or the device is not connected.
+     */
+    protected void onDeviceLost() {
         for (DeviceListener deviceListener : deviceListeners) {
             if (deviceListener.isEnabled()) {
                 deviceListener.onDeviceLost();
@@ -205,28 +281,56 @@ public class Device {
         }
     }
 
+    /**
+     * Power the connected device off.
+     */
     public void powerOff() {
         send("[!POWER_OFF]");
     }
 
+    /**
+     * Request the battery status.
+     */
     public void requestBatteryStatus() {
         send("[!GET_VCC]");
     }
 
-    public void vibrateDevice(int times, int durationMS) {
-        send("[!BLINK][0][" + times + "][2|" + durationMS + "]");
+    /**
+     * Vibrates the physical device.
+     *
+     * @param times    Number of pulses.
+     * @param duration Duration in milliseconds of the on and off state.
+     */
+    public void vibrateDevice(int times, int duration) {
+        send("[!BLINK][0][" + times + "][2|" + duration + "]");
     }
 
+    /**
+     * Sets the touch sensibility of the device's tiles. The value passed is proportional to the
+     * sensibility.
+     *
+     * @param sensibility Integer in the range [0, 16].
+     */
     public void setTouchSensibility(int sensibility) {
         send("[!SET_THRESHOLD][" + sensibility + "]");
     }
 
+    /**
+     * Send a low level message to the physical device.
+     *
+     * @param msg Message to be sent.
+     */
     public void send(byte[] msg) {
         serviceConnection.sendBTMessage(msg);
     }
 
+    /**
+     * Send a low level message to the physical device in a more human readable form.
+     *
+     * @param msg Message to be sent.
+     */
     public void send(String msg) {
-        ByteBuffer bbuf = ByteBuffer.allocate(500);
+        ByteBuffer bbuf = ByteBuffer.allocate(64);
         msg = msg.replace("[", "");
         Map<Integer, Integer> lengthMap = new HashMap<>();
         Map<Integer, Integer> refMap = new HashMap<>();
